@@ -1,0 +1,34 @@
+from brping import Ping360
+import numpy as np
+p = Ping360()
+p.connect_serial("/dev/ttyUSB0",115200)
+
+if p.initialize() is False:
+	print("Failed to initialize ping!")
+
+#Here we have the different parameters. Limits in ping360.py
+p.set_gain_setting(2)
+p.set_mode(1)
+p.set_transmit_duration(55)
+p.set_transmit_frequency(1000)
+p.set_sample_period(5000)
+p.set_number_of_samples(200)
+
+#For-loop that represents the scan of the sonar.
+for x in range(0,400):    #(start angle, end angle, steps), x is the gradiant that is 0.9 degrees
+	response = p.transmitAngle(x)
+	print(response)	
+	data = np.frombuffer(response.data, dtype=np.uint8);
+	print(data.min(),data.max()) #Highest and lowest values 
+	#print all locations that are above threshold
+	threshold = 160
+	b = np.where(data >= threshold)
+	print(b)
+	
+p.control_motor_off() #Instanty put the sensor into standby mode
+
+
+	
+	#0.07 per data = distance
+
+
