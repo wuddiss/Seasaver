@@ -1,0 +1,21 @@
+from pymavlink import mavutil
+
+# Connect to ArduPilot (adjust the connection string accordingly)
+master = mavutil.mavlink_connection('/dev/ttyACM0')
+
+while True:
+    # Wait for a GPS message
+    msg = master.recv_match(type='GPS_RAW_INT', blocking=True)
+    
+    # Extract and print GPS coordinates
+    if msg is not None:
+        lat = msg.lat / 1e7
+        lon = msg.lon / 1e7
+        print(f'Latitude: {lat}, Longitude: {lon}')
+
+        # Extract and print heading information
+        heading = msg.cog / 100  # Heading in degrees (scaled by 100)
+        print(f'Heading: {heading} degrees')
+
+
+
