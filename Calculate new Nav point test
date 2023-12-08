@@ -1,0 +1,58 @@
+import math
+import random
+from geopy.distance import distance
+from time import sleep
+
+def generate_new_data():
+    # Generate a random angle in the range [0, 360)
+    new_angle = random.uniform(0, 360)
+
+    # Generate a random distance in the range [1, 15)
+    new_distance = random.uniform(1, 15)
+
+    return new_angle, new_distance
+
+def generate_new_coordinates(current_coords, current_heading, new_angle, new_distance):
+    # Constants for Earth's radius in meters
+    R = 6371000.0
+
+    # Convert angles to radians
+    lat, lon = current_coords
+    current_heading_rad = math.radians(current_heading)
+    new_angle_rad = math.radians(new_angle)
+
+    # Calculate the change in coordinates
+    dlat = new_distance * math.cos(current_heading_rad + new_angle_rad) / R
+    dlon = new_distance * math.sin(current_heading_rad + new_angle_rad) / (R * math.cos(math.radians(lat)))
+
+    # Update coordinates
+    new_lat = lat + math.degrees(dlat)
+    new_lon = lon + math.degrees(dlon)
+
+    return new_lat, new_lon
+
+# Example starting coordinates
+current_coords = (40.7128, -74.0060)  # Latitude and Longitude of New York City
+
+# Initialize the heading angle for testing
+current_heading = 0.0  # Initial heading angle
+
+# Simulate updates every 5 seconds
+for _ in range(10):  # Update 10 times for testing
+    # Generate new data
+    new_angle, new_distance = generate_new_data()
+
+    # Generate new coordinates based on the new data
+    new_coords = generate_new_coordinates(current_coords, current_heading, new_angle, new_distance)
+
+    # Print the new coordinates, heading, angle, and distance
+    print("Updated Coordinates:", new_coords)
+    print("Current Heading:", current_heading)
+    print("New Angle:", new_angle)
+    print("New Distance:", new_distance)
+
+    # Update the current coordinates for the next iteration
+    current_coords = new_coords
+
+    # Simulate a 5-second delay
+    sleep(5)
