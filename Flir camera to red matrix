@@ -1,0 +1,63 @@
+import cv2
+import numpy as np
+
+# Initialize the thermal camera (replace '0' with the appropriate camera index)
+cap = cv2.VideoCapture(1)
+
+# Set your desired red threshold (adjust as needed)
+red_threshold = 235
+
+while True:
+    # Capture a frame from the thermal camera
+    ret, frame = cap.read()
+
+    # Check if the frame was successfully captured
+    if not ret:
+        break
+
+    # Split the frame into its RGB channels
+    blue, green, red = cv2.split(frame)
+
+    # Create a matrix of zeros with the same shape as the original frame
+    result_matrix = np.zeros_like(frame, dtype=np.uint8)
+
+    # Check if each pixel is more red than the threshold
+    red_condition = red > red_threshold
+
+    # Set the "R" channel to 255 where the condition is met
+    result_matrix[:, :, 2] = np.where(red_condition, 255, 0)
+
+    # Split the frame into left, middle, and right parts
+    height, width, _ = frame.shape
+    middle_start = (width - 20) // 2
+    middle_end = middle_start + 20
+
+    left_matrix = result_matrix[:, :middle_start, :]
+    middle_matrix = result_matrix[:, middle_start:middle_end, :]
+    right_matrix = result_matrix[:, middle_end:, :]
+
+    # Count the number of red pixels in each section
+    left_red_count = np.count_nonzero(left_matrix[:, :, 2])
+    middle_red_count = np.count_nonzero(middle_matrix[:, :, 2])
+    right_red_count = np.count_nonzero(right_matrix[:, :, 2])
+
+    # Determine which section has more red pixels
+    if left_red_count > middle_red_count and left_red_count > right_red_count:
+        print("More red pixels in the left section")
+    elif middle_red_count > left_red_count and middle_red_count > right_red_count:
+        print("More red pixels in the middle section")
+    elif right_red_count > left_red_count and right_red_count > middle_red_count:
+        print("More red pixels in the right section")
+    else:
+        print("Equal distribution of red pixels")
+
+    # Display the result
+    cv2.imshow('Result', result_matrix)
+
+    # Break the loop if 'q' is pressed
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+# Release the camera
+cap.release()
+cv2.destroyAllWindows()
