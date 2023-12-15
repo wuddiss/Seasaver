@@ -1,0 +1,61 @@
+from pymavlink import mavutil
+import time
+
+# Connect to the vehicle using MAVLink
+vehicle = mavutil.mavlink_connection('com5')  # Adjust the connection string
+
+# Arm the vehicle
+vehicle.arducopter_arm()
+
+# Wait for the vehicle to be armed
+vehicle.motors_armed_wait()
+
+# Define the duration of each motor test in seconds
+test_duration = 20
++
+
+
+# Test each motor by incrementally changing PWM values
+for motor_num in range(1, 5):  # Adjust the range based on the number of motors on your vehicle
+    print(f"Testing Motor {motor_num}")
+
+    start_time = time.time()
+
+    while time.time() - start_time < test_duration:
+        # Incrementally change PWM value for each motor
+        for pwm_value in range(1000, 1850, 100):
+            # Send MAVLink command to set PWM value for each motor
+            vehicle.mav.command_long_send(
+                vehicle.target_system, vehicle.target_component,
+                mavutil.mavlink.MAV_CMD_DO_SET_SERVO,  # Command to set servo PWM
+                0,  # Confirmation
+                motor_num,  # Motor number (1-indexed)
+                pwm_value,  # PWM value
+                0, 0, 0, 0, 0, 0  # Parameters 3-9 (not used for this command)
+            )
+
+            print(f"Motor {motor_num} PWM: {pwm_value}")
+            
+            time.sleep(0.1)  # Wait for a short time before changing PWM value
+
+# Wait for a moment to allow motors to adjust
+time.sleep(2)
+
+# Print the final motor PWM values
+print("Final Motor PWM Values:")
+while True:
+    msg_servo = vehicle.recv_match(type='SERVO_OUTPUT_RAW', blocking=True)
+    if msg_servo:
+        motor_pwm_values = [msg_servo.servo1_raw, msg_servo.servo2_raw, msg_servo.servo3_raw, msg_servo.servo4_raw, msg_servo.servo5_raw, msg_servo.servo6_raw, msg_servo.servo7_raw, msg_servo.servo8_raw]
+        print(motor_pwm_values)
+        break
+
+# Do other operations or send additional commands here...
+# # gisk
+# 1 = front -   left
+# 2 = rear  -   left
+# 3 = front -   right
+# 4 = rear  -   right
+
+# Disarm the vehicle
+vehicle.arducopter_disarm()
