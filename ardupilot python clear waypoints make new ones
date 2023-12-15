@@ -1,0 +1,82 @@
+from pymavlink import mavutil
+import time
+
+# Connect to the vehicle using MAVLink
+master = mavutil.mavlink_connection('com5')  # Adjust the connection string
+
+# Arm the vehicle
+master.arducopter_arm()
+
+# Wait for the vehicle to be armed
+master.motors_armed_wait()
+time.sleep(10)
+
+# Request the current mission
+print("Requesting current mission...")
+master.mav.mission_request_list_send(0, 0)
+
+# Wait for the mission to be received
+mission_count = None
+while mission_count is None:
+    msg = master.recv_match(type='MISSION_COUNT', blocking=True)
+    if msg:
+        mission_count = msg.count
+
+print(f"Current mission has {mission_count} waypoints.")
+
+# Clear existing waypoints
+print("Clearing existing waypoints...")
+for seq in range(mission_count):
+    master.mav.mission_clear_all_send(0, 0, seq)
+
+# Wait for a moment to ensure the clear message is processed
+time.sleep(2)
+
+print("Existing waypoints cleared.")
+
+# Define new waypoint coordinates
+new_lat = int(62.7749)
+new_lon = int(-21.4194)
+
+# Create a MAVLink MISSION_ITEM message for the new waypoint
+print(f"Creating new waypoint at Latitude={new_lat}, Longitude={new_lon}...")
+waypoint_msg = master.mav.mission_item_encode(
+    1,  # System ID
+    1,  # Component ID
+    0,  # Sequence number (set to 0 for a new waypoint)
+    mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,  # Frame
+    mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,  # Command
+    0,  # Current
+    0,  # Auto continue
+    0,  # Param 1
+    0,  # Param 2
+    0,  # Param 3
+    0,  # Param 4
+    new_lat,  # Latitude
+    new_lon,  # Longitude
+    50   # Altitude (adjust as needed)
+)
+
+# Send the waypoint message
+print("Sending new waypoint...")
+master.mav.send(waypoint_msg)
+
+# Wait for a moment to ensure the message is processed
+time.sleep(10)
+
+# Request the updated mission
+print("Requesting updated mission...")
+master.mav.mission_request_list_send(0, 0)  # Request the full mission list
+
+# Wait for the updated mission to be received
+mission_count = None
+while mission_count is None:
+    msg = master.recv_match(type='MISSION_COUNT', blocking=False)
+    if msg:
+        mission_count = msg.count
+
+print(f"Updated mission has {mission_count} waypoints.")
+
+# Close the MAVLink connection
+print("Closing MAVLink connection.")
+master.close()
